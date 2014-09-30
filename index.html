@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <script src="jQuery/jquery-1.9.0.js"></script>
+    <script src="jQuery/jquery-ui-1.10.0.custom.js"></script>
+    <script src="jQuery/jquery.xdomainajax.js"></script>
+    <script src="Coordinate.js"></script>
+    <script src="wgs84_ch1903.js"></script>
+    <script src="navref_wrapper.js"></script>
+    <script src="Geo.js"></script>
+    <script src="Core.js"></script>
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif; font-size: 13px;
+            margin: 20px;
+        }
+        .small {
+            font-family: 'Open Sans', sans-serif; font-size: 11px;
+        }
+    </style>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,300italic,600,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="jQuery/css/jquery-ui-1.10.0.custom.css" />
+    <script>
+        $(function() {
+            $( "#tabs" ).tabs();
+        });
+    </script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+    <link rel="stylesheet" href="css/tooltipster.css">
+    <script src="jquery.tooltipster.min.js"></script>
+</head>
+<body>
+
+<div class="row">
+    <div class="col-md-4"></div>
+    <div class="col-md-4">
+
+        <h2>Koordinaten Rechner</h2>
+        <h2><small>Umrechnen und formatieren von Geo-Koordinaten</small></h3>
+            <p>Mit dem C-DEV Geo Calculator können Schweizer Landeskoordinaten Swiss Grid LV03 LV95 in WGS84-Koordinaten (GPS) und umgekehrt transformiert werden.</p>
+            <div class="input-group" id="calculationValue">
+                <input type="text" class="form-control" id="coordInputRef">
+                 <span class="input-group-btn"><button class="btn btn-default" type="button" id="convert">Go!</button></span>
+            </div>
+            <p>&nbsp;</p>
+            <div class="bg-success" id="content" style="display: none; padding: 10px"></div><p>&nbsp;</p>
+            <p class="bg-info">Alle Eingabeformate können verarbeitet werden. <br/><a href="http://www.c-dev.ch/2012/10/26/koordinatenformate/">Informationen zu Geo Koordinaten Schreibweisen...</a></p>
+            <div class="small" id="convertContent"></div>
+    </div>
+    <div class="col-md-4"></div>
+</div>
+
+
+<script>
+    $(document).ready(function() {
+        $('#calculationValue').tooltipster({
+            content: $('<p><strong></strong></p><p>Koordinaten eintippen oder einfügen und mit Go! die Berechenung starten</p></span>')
+        });
+    });
+</script>
+
+<!--
+<h2>Test Script Coordinates</h2>
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">WGS84 - SwissGrid Converter</a></li>
+        <li><a href="#tabs-2">RegEx Test (Input Parser)</a></li>
+    </ul>
+    <div id="tabs-2">
+        <input id="coordInput" style="width: 400px">&nbsp;<a href="#" id="test">Parse</a>&nbsp;&nbsp;<a href="#" class="clear">Clear</a>
+        <p class="small">Insert default test coordinates<br><a href="#" id="deg">deg</a> | <a href="#" id="dec">dec</a> | <a href="#" id="dms">dms</a> | <a href="#" id="lv03">lv03</a> | <a href="#" id="lv95">lv95</a> | <a href="#" id="degOther">deg Other</a> | <a href="#" id="decOther">dec Other</a></p>
+    </div>
+    <div id="tabs-1">
+        <input id="coordInputRefTTTTTTTTTTT" style="width: 400px">&nbsp;<a href="#" id="convertTTTT">Convert</a>&nbsp;&nbsp;<a href="#" class="clear">Clear</a>
+        <p class="small">Insert default test coordinates<br><a href="#" id="degref">deg</a> | <a href="#" id="decref">dec</a> | <a href="#" id="dmsref">dms</a> | <a href="#" id="lv03ref">lv03</a> | <a href="#" id="lv95ref">lv95</a> | <a href="#" id="degOtherref">deg Other</a> | <a href="#" id="decOtherref">dec Other</a></p>
+
+    </div>
+</div>
+-->
+
+<script>
+
+    $(function() {
+        $( "#tabs" ).tabs();
+    });
+
+    $('.clear').click(function(){$('#coordInput').val(""); $('#coordInputRef').val(""); $('#content').html("");});
+
+    // ## Referenz Vorgabe frei ausgewählt ##
+    var deg = "N 47° 15.7315434 E 008° 30.6123443";
+    var degLat = "47° 15.7315434";
+    var degLon = "8° 30.6123443";
+
+    var degOther = " S 30° 01.629 W 051° 12.049 ";
+    var decOther = "-7,51 -40,08";
+
+    // Referenzwerte umgerechnet
+    var lv03 = "681098.898 235140.774";
+    var lv95 = "2681099.743 1235140.625";
+    var dec = "N 47.262192400° E 8.510205747°";
+    var dms = "N 47° 15'43.89264\u2033 E 8° 30'36.74069\u2033";
+
+    $('#coordInput').val("");
+
+    $('#deg').click(function() {$('#coordInput').val(deg);});
+    $('#dec').click(function() {$('#coordInput').val(dec);});
+    $('#dms').click(function() {$('#coordInput').val(dms);});
+    $('#lv03').click(function() {$('#coordInput').val(lv03);});
+    $('#lv95').click(function() {$('#coordInput').val(lv95);});
+    $('#degOther').click(function() {$('#coordInput').val(degOther);});
+    $('#decOther').click(function() {$('#coordInput').val(decOther);});
+
+    $('#degref').click(function() {$('#coordInputRef').val(deg);});
+    $('#decref').click(function() {$('#coordInputRef').val(dec);});
+    $('#dmsref').click(function() {$('#coordInputRef').val(dms);});
+    $('#lv03ref').click(function() {$('#coordInputRef').val(lv03);});
+    $('#lv95ref').click(function() {$('#coordInputRef').val(lv95);});
+    $('#degOtherref').click(function() {$('#coordInputRef').val(degOther);});
+    $('#decOtherref').click(function() {$('#coordInputRef').val(decOther);});
+
+    $('#test').click(function() {testRegEx();});
+    $('#convert').click(function() {testConverter();});
+    $('#navref').click(function() {testNAVREF();});
+
+    // $('#convertContent').append("<table><tr><td id=\"sp1\" style=\"padding:20px\"></td><td id=\"sp2\" style=\"padding:20px\"></td><td valign=\"top\" id=\"sp3\" style=\"padding:20px\"></td></tr></table>");
+
+    // convert
+    $('#sp1').append("<b>Referencevalues calculated on NAVREF</b><br>WGS84<br>");
+    $('#sp1').append("<i><b>"+deg + "</b></i><br>");
+    $('#sp1').append(dec + "<br>");
+    $('#sp1').append(dms + "<br>");
+    $('#sp1').append("SwissGrid<br>");
+    $('#sp1').append(lv03 + "<br>");
+    $('#sp1').append(lv95 + "<br>");
+
+    $('#sp2').append("<b>Referencevalues calculated on NAVREF</b><br>WGS84<br>");
+    $('#sp2').append("47° 15.7315442\" 8° 30.6123449\"<br>");
+    $('#sp2').append("47.262192403° 8.510205748°<br>");
+    $('#sp2').append("47°15'43.89265\" 8°30'36.74069\"<br>");
+    $('#sp2').append("SwissGrid<br>");
+    $('#sp2').append("<i><b>"+lv03 + "</b></i><br>");
+    $('#sp2').append("2681099.743 1235140.625<br>");
+
+     
+    $('#sp3').append("<b>swisstopo critical coordinates");
+    $('#sp3').append("<br>");
+    $('#sp3').append(" N 47°18.530 E 008°27.999  -->  677 736 / 240 282<br>");
+    $('#sp3').append("N 47°18.530 E 008°28.000  -->  678 577 / 240 293 * critical!<br>");
+    $('#sp3').append("N 47°18.530 E 008°28.001  -->  677 738 / 240 282<br>");    
+
+
+    function testRegEx() {
+        var obj = new Coordinate($('#coordInput').val());
+        // $('#content').html(obj.Out + "<br><br>");
+        if(obj.IsWGS84){
+            $('#content').append(obj.OriginFormat +" = "+  obj.Lat.Prefix + ":" + obj.Lat.Degree + ":" + obj.Lat.Minute + ":" + obj.Lat.Second + " - " +obj.Lon.Prefix + ":" + obj.Lon.Degree + ":" + obj.Lon.Minute+ ":" + obj.Lon.Second);
+        } else if(obj.IsSwissGrid) {
+            $('#content').append(obj.OriginFormat +" = "+ obj.X.Meter+ ":" + obj.Y.Meter);
+        }
+        $('#content').append("<br>WGS84:" + obj.IsWGS84 +" SwissGrid:" + obj.IsSwissGrid +" Valid:" + obj.IsValid);
+    }
+
+
+    function testConverter() {
+        var coord = new Coordinate($('#coordInputRef').val());
+        if (!coord.IsValid) {
+            $('#content').html('<b>FEHLER beim Parsen der Eingabe!</b>');
+            return;
+        }
+        var _parseLat = Geo.parseDMS(coord.Lat.Origin);
+        var _parseLon = Geo.parseDMS(coord.Lon.Origin);
+
+        var _parseLat = Geo.parseDMS(coord.Lat.Origin);
+        var _parseLon = Geo.parseDMS(coord.Lon.Origin);
+
+       $('#content').html('');
+        $('#content').show();
+
+        var _x = WGStoCHx(_parseLat,_parseLon);
+        var _y = WGStoCHy(_parseLat,_parseLon);
+        var coord = new Coordinate($('#coordInputRef').val());
+        if(!coord.IsValid) { $('#content').html('<b>FEHLER beim Parsen der Eingabe!</b>');
+            return;
+        }
+        var req = new Request(Number(coord.Dec.Lon.Degree), Number(coord.Dec.Lat.Degree), navrefFormats.Dec, navrefFormats.LV95);
+        var response = CallNAVREF(req, $('#lv95Content'));
+
+        $('#content').append('<b>Berechnete Koordinaten</b><br><br>');
+        $('#content').append("DMS&nbsp;<input style='width: 100%;' value=\"" + coord.Dms.Format + "\"><br>");
+        $('#content').append("DEG&nbsp;<input style='width: 100%;' value=\"" + coord.Deg.Format + "\"><br>");
+        $('#content').append("DEC&nbsp;<input style='width: 100%;' value=\"" + coord.Dec.Format + "\"><br>");
+        $('#content').append("Lv03&nbsp;<input style='width: 100%;' value=\"" + coord.Lv03.Format + "\"><br>");
+        $('#content').append("Lv95&nbsp;<input style='width: 100%;' value=\"" + coord.Lv95.Format + "\"><br>");
+    }
+
+
+
+
+    function testConverterTTTTT() {
+        var coord = new Coordinate($('#coordInputRef').val());
+        if(!coord.IsValid) {
+            $('#content').html('<b>FEHLER beim Parsen der Eingabe!</b>');
+            return;
+        }
+
+        // $('#content').html('<br>');
+
+        var _parseLat = Geo.parseDMS(coord.Lat.Origin);
+        var _parseLon = Geo.parseDMS(coord.Lon.Origin);
+
+        $('#content').append('<br>Parsed input Lat:'+ _parseLat +' Lon:'+ _parseLon +'<br>');
+
+        var _x = WGStoCHx(_parseLat,_parseLon);
+        var _y = WGStoCHy(_parseLat,_parseLon);
+        var coord = new Coordinate($('#coordInputRef').val());
+        if(!coord.IsValid) { $('#content').html('<b>FEHLER beim Parsen der Eingabe!</b>');
+            return;
+        }
+        var req = new Request(Number(coord.Dec.Lon.Degree), Number(coord.Dec.Lat.Degree), navrefFormats.Dec, navrefFormats.LV95);
+        var response = CallNAVREF(req, $('#lv95Content'));
+
+        $('#content').append('<br><b>Test output formater with rounded values</b><br>');
+        $('#content').append("Format DMS : " + coord.Dms.Format + '<br>');
+        $('#content').append("Format DEG : " + coord.Deg.Format + '<br>');
+        $('#content').append("Format DEC : " + coord.Dec.Format + '<br>');
+
+        $('#content').append("Format Lv03 : " + coord.Lv03.Format + '<br>');
+        $('#content').append("Format Lv95 : " + coord.Lv95.Format + '<br>');
+
+        /*
+        $('#content').append('<br><b>Test Library wgs84_ch1903 LV03</b><br>');
+
+        $('#content').append("<table>");
+        $('#content').append("<tr><td>WGStoCHx / WGStoCHy : </td><td>" + _y + " : " + _x+"</td></tr>");
+        $('#content').append("<tr><td>CHtoWGSlat / CHtoWGSlng : </td><td>" + CHtoWGSlat(_y,_x) + " : " + CHtoWGSlng(_y,_x)+"</td></tr>");
+		$('#content').append('<tr><td colspan="2"><b><br>Test Library NAVREF LV95</b></td></tr>');
+        $('#content').append("<tr><td>lv95 lat / lv95 lng : </td><td><div id=\"lv95Content\"></div></td></tr>");
+        $('#content').append("</table>");
+
+
+		
+        $('#content').append('<br><b>Test Library Geo WGS84</b><br>');
+        $('#content').append("<table>");
+        $('#content').append('<tr><td>Input : </td><td><i>'+coord.Lat.Origin+' : '+coord.Lon.Origin+'</i><tr>');
+        $('#content').append("<tr><td>parseDMS : </td><td>" + _parseLat +' : '+ _parseLon +'<tr>');
+        $('#content').append("<tr><td>toDMS : </td><td>" + Geo.toDMS(_parseLat) +' : '+ Geo.toDMS(_parseLon) +'<br>');
+        $('#content').append("<tr><td>toDMS dms 10 : </td><td>" + Geo.toDMS(_parseLat,"dms",10) +' : '+ Geo.toDMS(_parseLon,"dms",10) +'<tr>');
+        $('#content').append("<tr><td>toDMS dm 10 : </td><td>" + Geo.toDMS(_parseLat,"dm",10) +' : '+ Geo.toDMS(_parseLon,"dm",10) +'<tr>');
+        $('#content').append("<tr><td>toDMS d 10 : </td><td>" + Geo.toDMS(_parseLat,"d",10) +' : '+ Geo.toDMS(_parseLon,"d",10) +'<tr>');
+        $('#content').append("<tr><td>toDMS d 14 : </td><td>" + Geo.toDMS(_parseLat,"d",14) +' : '+ Geo.toDMS(_parseLon,"d",14) +'<tr>');
+        $('#content').append("<tr><td>toLat dms 4 / toLon dms 4 :&nbsp;&nbsp;</td><td>" + Geo.toLat(_parseLat,"dms",4) +' : '+ Geo.toLon(_parseLon,"dms",4) +'<tr>');
+        $('#content').append("<table>");
+        */
+
+
+    }
+	
+    function testNAVREF() {
+        var coord = new Coordinate($('#coordInputRef').val());
+        if(!coord.IsValid) {
+            $('#content').html('<b>FEHLER beim Parsen der Eingabe!</b>');
+            return;
+        }
+		
+		$('#content').html('');
+
+        var req = new Request(Number(coord.Dec.Lon.Degree), Number(coord.Dec.Lat.Degree), navrefFormats.Dec, navrefFormats.LV95);
+        var response = CallNAVREF(req, $('#content'));
+    }
+
+</script>
+
+
+</body>
+</html>
